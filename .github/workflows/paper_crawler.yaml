@@ -27,7 +27,7 @@ jobs:
         EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
-        KEYWORDS: '["multimodal learning", "vision language", "cross-modal"]'  # 可以设置多个关键词
+        KEYWORDS: ${{ vars.KEYWORDS }}
       run: |
         python -c "
         from src.crawler import fetch_dblp_papers, fetch_arxiv_papers, format_email_content
