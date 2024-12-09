@@ -39,7 +39,7 @@ def fetch_arxiv_papers(topics_str):
         # 构建 OR 查询
         keyword_queries = [f'ti:"{kw}"' for kw in related_keywords]
         query = ' OR '.join(keyword_queries)
-        
+        print(query)
         search = arxiv.Search(
             query=query,
             max_results=50,
