@@ -56,12 +56,13 @@ def fetch_arxiv_papers(keywords):
     """
     all_papers = []
     # 设置查询时间范围为最近7天，使用UTC时区
-    date_threshold = datetime.now(timezone.utc) - timedelta(days=7)
+    date_threshold = datetime.now(timezone.utc) - timedelta(days=1)
     
     for keyword in keywords:
         # 构建arXiv查询
+        title_query = f'ti:"{keyword}"'  # 使用ti:前缀限制在标题搜索
         search = arxiv.Search(
-            query=keyword,
+            query=title_query,
             max_results=50,
             sort_by=arxiv.SortCriterion.SubmittedDate
         )
