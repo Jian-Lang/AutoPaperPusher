@@ -1,114 +1,99 @@
-import requests
-from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
-import json
+# crawler.py
 import arxiv
-from datetime import timezone
+from datetime import datetime, timezone, timedelta
+from collections import defaultdict
 
-def fetch_dblp_papers(keywords):
+def parse_topics(topics_str):
     """
-    获取DBLP论文，支持多个关键词，并筛选最近7天的论文
+    解析主题配置字符串
+    Input example: "missing modality:incomplete multimodal learning;agent:llm"
+    Returns: 
+        keywords_dict: {主标题: [所有相关关键词]}
+        all_keywords: 所有需要搜索的关键词列表
     """
-    all_papers = []
-    # 设置时间阈值
-    date_threshold = datetime.now() - timedelta(days=7)
+    keywords_dict = {}
+    all_keywords = []
     
-    for keyword in keywords:
-        url = f"https://dblp.org/search/publ/api?q={keyword}&format=json"
-        response = requests.get(url)
-        
-        if response.status_code != 200:
-            continue
-        
-        data = response.json()
-        hits = data.get('result', {}).get('hits', {}).get('hit', [])
-        
-        for hit in hits:
-            info = hit.get('info', {})
-            # 获取论文日期
-            try:
-                paper_date = datetime.strptime(info.get('year', ''), '%Y')
-                # 如果是今年的论文则保留
-                if paper_date.year == datetime.now().year:
-                    authors_info = info.get('authors', {}).get('author', [])
-                    if isinstance(authors_info, dict):
-                        authors = [authors_info.get('text', '')]
-                    else:
-                        authors = [author.get('text', '') for author in authors_info]
-                        
-                    paper = {
-                        'title': info.get('title', ''),
-                        'authors': authors,
-                        'venue': info.get('venue', ''),
-                        'year': info.get('year', ''),
-                        'url': info.get('url', ''),
-                        'source': 'DBLP'
-                    }
-                    all_papers.append(paper)
-            except ValueError:
-                continue
+    topics = topics_str.strip().split(';')
+    for topic in topics:
+        if ':' in topic:
+            keywords = topic.strip().split(':')
+            main_keyword = keywords[0].strip()
+            all_topic_keywords = [k.strip() for k in keywords]
+            keywords_dict[main_keyword] = all_topic_keywords
+            all_keywords.extend(all_topic_keywords)
     
-    return all_papers
+    return keywords_dict, all_keywords
 
-def fetch_arxiv_papers(keywords):
+def fetch_arxiv_papers(topics_str):
     """
-    获取arXiv论文，支持多个关键词
+    获取arXiv论文，每个主题的等价词合并为一个查询
+    topics_str: 主题配置字符串，格式如 "missing modality:incomplete multimodal learning;agent:llm"
     """
-    all_papers = []
-    # 设置查询时间范围为最近7天，使用UTC时区
-    date_threshold = datetime.now(timezone.utc) - timedelta(days=1)
+    keywords_dict, _ = parse_topics(topics_str)
+    papers_by_topic = defaultdict(list)
+    date_threshold = datetime.now(timezone.utc) - timedelta(days=7)
     
-    for keyword in keywords:
-        # 构建arXiv查询
-        title_query = f'ti:"{keyword}"'  # 使用ti:前缀限制在标题搜索
+    # 对每个主题只执行一次查询
+    for main_keyword, related_keywords in keywords_dict.items():
+        # 构建 OR 查询
+        keyword_queries = [f'ti:"{kw}"' for kw in related_keywords]
+        query = ' OR '.join(keyword_queries)
+        
         search = arxiv.Search(
-            query=title_query,
+            query=query,
             max_results=50,
             sort_by=arxiv.SortCriterion.SubmittedDate
         )
         
-        for result in search.results():
-            # 确保比较时使用相同的时区
-            if result.published.replace(tzinfo=timezone.utc) > date_threshold:
-                paper = {
-                    'title': result.title,
-                    'authors': [author.name for author in result.authors],
-                    'venue': 'arXiv',
-                    'year': result.published.year,
-                    'url': result.entry_id,
-                    'source': 'arXiv',
-                    'abstract': result.summary
-                }
-                all_papers.append(paper)
+        try:
+            for result in search.results():
+                if result.published.replace(tzinfo=timezone.utc) > date_threshold:
+                    paper = {
+                        'title': result.title,
+                        'authors': [author.name for author in result.authors],
+                        'published_date': result.published.strftime('%Y-%m-%d'),
+                        'url': result.entry_id,
+                        'abstract': result.summary
+                    }
+                    papers_by_topic[main_keyword].append(paper)
+                            
+        except Exception as e:
+            print(f"Error fetching arXiv papers for topic {main_keyword}: {str(e)}")
+            continue
     
-    return all_papers
+    return papers_by_topic
 
-def format_email_content(papers):
+def format_email_content(papers_by_topic):
     """
-    格式化邮件内容，按来源分类展示论文
+    格式化邮件内容，按主题分组
     """
     current_date = datetime.now().strftime('%Y-%m-%d')
-    content = f"Latest papers from DBLP and arXiv (Last 7 days until {current_date}):\n\n"
+    content = f"Latest arXiv Papers (Last 7 days until {current_date})\n\n"
     
-    # 按来源分组
-    sources = {'DBLP': [], 'arXiv': []}
-    for paper in papers:
-        sources[paper['source']].append(paper)
+    if not papers_by_topic:
+        content += "No papers found in the last 7 days.\n"
+        return content
     
-    # 格式化每个来源的论文
-    for source, source_papers in sources.items():
-        if source_papers:  # 只有当有论文时才显示分类
-            content += f"=== {source} Papers ({len(source_papers)} papers) ===\n\n"
-            for paper in source_papers:
-                content += f"Title: {paper['title']}\n"
-                content += f"Authors: {', '.join(paper['authors'])}\n"
-                content += f"Venue: {paper['venue']}\n"
-                content += f"Year: {paper['year']}\n"
-                content += f"URL: {paper['url']}\n"
-                if source == 'arXiv' and 'abstract' in paper:
-                    content += f"Abstract: {paper['abstract'][:500]}... (truncated)\n"  # 限制摘要长度
-                content += "-" * 50 + "\n\n"
-        else:
-            content += f"=== {source} Papers (No papers found) ===\n\n"
+    total_papers = sum(len(papers) for papers in papers_by_topic.values())
+    content += f"Total papers found: {total_papers}\n\n"
+    
+    # 遍历每个主题
+    for topic, papers in papers_by_topic.items():
+        if not papers:
+            continue
+            
+        content += f"=== {topic.upper()} ({len(papers)} papers) ===\n\n"
+        
+        # 按发布日期排序
+        papers.sort(key=lambda x: x['published_date'], reverse=True)
+        
+        for paper in papers:
+            content += f"Title: {paper['title']}\n"
+            content += f"Authors: {', '.join(paper['authors'])}\n"
+            content += f"Published Date: {paper['published_date']}\n"
+            content += f"URL: {paper['url']}\n"
+            content += f"Abstract: {paper['abstract'][:500]}... (truncated)\n"
+            content += "-" * 80 + "\n\n"
     
     return content
