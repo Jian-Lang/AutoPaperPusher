@@ -93,7 +93,7 @@ def format_email_content(papers_by_topic):
             content += f"Authors: {', '.join(paper['authors'])}\n"
             content += f"Published Date: {paper['published_date']}\n"
             content += f"URL: {paper['url']}\n"
-            content += f"Abstract: {paper['abstract'][:500]}... (truncated)\n"
+            content += f"Abstract: {paper['abstract']}\n"
             content += "-" * 80 + "\n\n"
     
     return content
