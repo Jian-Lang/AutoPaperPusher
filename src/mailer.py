@@ -1,20 +1,20 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from datetime import datetime  
 import os
-
 
 def send_email(content, recipient_email):
     sender_email = os.environ.get('EMAIL_USERNAME')
     password = os.environ.get('EMAIL_PASSWORD')
-
+    
     msg = MIMEMultipart()
     msg['From'] = sender_email
     msg['To'] = recipient_email
     msg['Subject'] = f"DBLP Daily Paper Update - {datetime.now().strftime('%Y-%m-%d')}"
-
+    
     msg.attach(MIMEText(content, 'plain'))
-
+    
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
