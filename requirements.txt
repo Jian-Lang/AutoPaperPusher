@@ -1,3 +1,4 @@
 requests
 beautifulsoup4
 python-dotenv
+arxiv==1.4.7
