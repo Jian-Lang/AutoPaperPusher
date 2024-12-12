@@ -32,14 +32,14 @@ def fetch_arxiv_papers(topics_str):
     """
     keywords_dict, _ = parse_topics(topics_str)
     papers_by_topic = defaultdict(list)
-    date_threshold = datetime.now(timezone.utc) - timedelta(days=2)
-    
+    date_threshold = datetime.now(timezone.utc) - timedelta(days=1)
+    print(date_threshold)
     # 对每个主题只执行一次查询
     for main_keyword, related_keywords in keywords_dict.items():
         # 构建 OR 查询
         keyword_queries = [f'ti:"{kw}"' for kw in related_keywords]
         query = ' OR '.join(keyword_queries)
-        print(query)
+        
         search = arxiv.Search(
             query=query,
             max_results=50,
@@ -69,10 +69,10 @@ def format_email_content(papers_by_topic):
     格式化邮件内容，按主题分组
     """
     current_date = datetime.now().strftime('%Y-%m-%d')
-    content = f"Latest arXiv Papers (Last 7 days until {current_date})\n\n"
+    content = f"Latest arXiv Papers (Last day until {current_date})\n\n"
     
     if not papers_by_topic:
-        content += "No papers found in the last 7 days.\n"
+        content += "No papers found in the last day.\n"
         return content
     
     total_papers = sum(len(papers) for papers in papers_by_topic.values())
