@@ -32,7 +32,7 @@ def fetch_arxiv_papers(topics_str):
     """
     keywords_dict, _ = parse_topics(topics_str)
     papers_by_topic = defaultdict(list)
-    date_threshold = datetime.now(timezone.utc) - timedelta(days=2)
+    date_threshold = datetime.now(timezone.utc) - timedelta(days=1)
     
     # 对每个主题只执行一次查询
     for main_keyword, related_keywords in keywords_dict.items():
