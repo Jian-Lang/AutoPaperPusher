@@ -32,7 +32,7 @@ def fetch_arxiv_papers(topics_str):
     """
     keywords_dict, _ = parse_topics(topics_str)
     papers_by_topic = defaultdict(list)
-    date_threshold = datetime.now(timezone.utc) - timedelta(days=1)
+    date_threshold = (datetime.now(ZoneInfo("Asia/Shanghai")) - timedelta(days=1))
     print(date_threshold)
     # 对每个主题只执行一次查询
     for main_keyword, related_keywords in keywords_dict.items():
@@ -48,7 +48,8 @@ def fetch_arxiv_papers(topics_str):
         
         try:
             for result in search.results():
-                if result.published.replace(tzinfo=timezone.utc) > date_threshold:
+                paper_time = result.published.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("Asia/Shanghai"))
+                if paper_time > date_threshold:
                     paper = {
                         'title': result.title,
                         'authors': [author.name for author in result.authors],
