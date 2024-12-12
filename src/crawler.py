@@ -2,6 +2,7 @@
 import arxiv
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
+from zoneinfo import ZoneInfo
 
 def parse_topics(topics_str):
     """
