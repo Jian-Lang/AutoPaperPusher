@@ -36,7 +36,7 @@ def fetch_arxiv_papers(topics_str):
     tz_cn = timezone(timedelta(hours=8))
     
     # 使用北京时间
-    date_threshold = (datetime.now(tz_cn) - timedelta(days=1))
+    date_threshold = (datetime.now(tz_cn) - timedelta(days=1.5))
     # 对每个主题只执行一次查询
     for main_keyword, related_keywords in keywords_dict.items():
         # 构建 OR 查询
