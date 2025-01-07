@@ -4,13 +4,6 @@ from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 
 def parse_topics(topics_str):
-    """
-    解析主题配置字符串
-    Input example: "missing modality:incomplete multimodal learning;agent:llm"
-    Returns: 
-        keywords_dict: {主标题: [所有相关关键词]}
-        all_keywords: 所有需要搜索的关键词列表
-    """
     keywords_dict = {}
     all_keywords = []
     
@@ -26,20 +19,13 @@ def parse_topics(topics_str):
     return keywords_dict, all_keywords
 
 def fetch_arxiv_papers(topics_str):
-    """
-    获取arXiv论文，每个主题的等价词合并为一个查询
-    topics_str: 主题配置字符串，格式如 "missing modality:incomplete multimodal learning;agent:llm"
-    """
+
     keywords_dict, _ = parse_topics(topics_str)
     papers_by_topic = defaultdict(list)
-    # 创建东八区时区对象
     tz_cn = timezone(timedelta(hours=8))
-    
-    # 使用北京时间
-    date_threshold = (datetime.now(tz_cn) - timedelta(days=1.5))
-    # 对每个主题只执行一次查询
+
+    date_threshold = (datetime.now(tz_cn) - timedelta(days=7))
     for main_keyword, related_keywords in keywords_dict.items():
-        # 构建 OR 查询
         keyword_queries = [f'ti:"{kw}"' for kw in related_keywords]
         query = ' OR '.join(keyword_queries)
         
@@ -69,9 +55,6 @@ def fetch_arxiv_papers(topics_str):
     return papers_by_topic
 
 def format_email_content(papers_by_topic):
-    """
-    格式化邮件内容，按主题分组
-    """
     current_date = datetime.now().strftime('%Y-%m-%d')
     content = f"Latest arXiv Papers (Last day until {current_date})\n\n"
     
@@ -82,14 +65,12 @@ def format_email_content(papers_by_topic):
     total_papers = sum(len(papers) for papers in papers_by_topic.values())
     content += f"Total papers found: {total_papers}\n\n"
     
-    # 遍历每个主题
     for topic, papers in papers_by_topic.items():
         if not papers:
             continue
             
         content += f"=== {topic.upper()} ({len(papers)} papers) ===\n\n"
-        
-        # 按发布日期排序
+
         papers.sort(key=lambda x: x['published_date'], reverse=True)
         
         for paper in papers:
