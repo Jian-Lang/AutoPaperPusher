@@ -11,7 +11,7 @@ def send_email(content, recipient_email):
     msg = MIMEMultipart()
     msg['From'] = sender_email
     msg['To'] = recipient_email
-    msg['Subject'] = f"DBLP Daily Paper Update - {datetime.now().strftime('%Y-%m-%d')}"
+    msg['Subject'] = f"ArXiv Daily Paper Update - {datetime.now().strftime('%Y-%m-%d')}"
     
     msg.attach(MIMEText(content, 'plain'))
     
