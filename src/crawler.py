@@ -24,7 +24,7 @@ def fetch_arxiv_papers(topics_str):
     papers_by_topic = defaultdict(list)
     tz_cn = timezone(timedelta(hours=8))
 
-    date_threshold = (datetime.now(tz_cn) - timedelta(days=7))
+    date_threshold = (datetime.now(tz_cn) - timedelta(days=2))
     for main_keyword, related_keywords in keywords_dict.items():
         keyword_queries = [f'ti:"{kw}"' for kw in related_keywords]
         query = ' OR '.join(keyword_queries)
