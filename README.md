@@ -20,7 +20,7 @@ Go to your forked repository on GitHub and navigate to **Settings > Secrets and 
 
 + **GMAIL_ADDRESS:** Your Gmail address used for sending emails.
 
-+ **GMAIL_PASSWORD:** The app password for your Gmail account. (Refer to Google's guide on creating an app password.)
++ **GMAIL_PASSWORD:** The app password for your Gmail account. (Refer to [Google's guide](https://support.google.com/mail/answer/185833) on creating an app password.)
 
 + **TO_EMAIL_ADDRESS:** The email address where you wish to receive the daily digests.
 
